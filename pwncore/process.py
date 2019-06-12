@@ -101,7 +101,7 @@ class RemoteProcess:
             self.__skt__.sendto(stuff, self.__rsockaddr__)
 
     # memory stack brute-forcing methods
-    def forcereadbytes(self, stuff: bytes=b"", verbose: bool=False) -> int:
+    def bruteforcestackframe(self, stuff: bytes=b"", verbose: bool=False) -> int:
         # method that brute-force 4 bytes in the stack for 32 bits architectures
         # and 8 bytes in stack for 64 bits architectures
         res: bytes = b""
@@ -125,12 +125,12 @@ class RemoteProcess:
         return struct.unpack(self.__architecture__.littleendian, res)[0]
 
     def bruteforcecanary(self, offset: int, verbose: bool = False) -> int:
-        self.__canary__ = self.forcereadbytes(b"A" * offset, verbose)
+        self.__canary__ = self.bruteforcestackframe(b"A" * offset, verbose)
         return self.__canary__
 
     def bruteforcememory(self, stuff: bytes, depth: int = 2, verbose: bool = False) -> typing.List[int]:
         results: typing.List[int] = []
         for i in range(depth):
-            results.append(self.forcereadbytes(stuff + b"".join([struct.pack(
+            results.append(self.bruteforcestackframe(stuff + b"".join([struct.pack(
                 self.__architecture__.littleendian, result) for result in results]), verbose))
         return results
