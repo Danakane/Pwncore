@@ -15,11 +15,11 @@ from pwncore import pwnutils
 
 class RemoteProcess:
 
-    def __init__(self, rsockaddr: typing.Tuple[typing.Any, ...], architecture: pwnutils.Architecture,
+    def __init__(self, rhost: str, rport: int, architecture: pwnutils.Architecture,
                  timeout: float = 0.02, protocol4: int = socket.SOCK_STREAM) -> None:
-        self.__rsockaddr__: typing.Tuple[typing.Any, ...] = rsockaddr
+        self.__rsockaddr__: typing.Tuple[typing.Any, ...] = netutils.getsockinfo(rhost, rport)[4]
         self.__protocol4__: int = protocol4
-        self.__skt__: socket.socket = None
+        self.__skt__: typing.Optional[socket.socket] = None
         self.__timeout__: float = timeout
         self.__architecture__: pwnutils.Architecture = architecture
         self.__canary__: int = 0
@@ -84,13 +84,13 @@ class RemoteProcess:
                     break
         return alive
 
-    def recv(self, size: int, timeout: int=None) -> bytes:
+    def recv(self, size: int, timeout: int = None) -> bytes:
         self.__skt__.settimeout(timeout)
         res: bytes = b""
         if self.__protocol4__ == socket.SOCK_STREAM:
             res = self.__skt__.recv(size)
         elif self.__protocol4__ == socket.SOCK_DGRAM:
-            res = self.__skt__.recvfrom(size)
+            res = self.__skt__.recvfrom(size)[0]
         self.__skt__.settimeout(None)
         return res
 
@@ -101,7 +101,7 @@ class RemoteProcess:
             self.__skt__.sendto(stuff, self.__rsockaddr__)
 
     # memory stack brute-forcing methods
-    def bruteforcestackframe(self, stuff: bytes=b"", verbose: bool=False) -> int:
+    def bruteforcestackframe(self, stuff: bytes = b"", verbose: bool = False) -> int:
         # method that brute-force 4 bytes in the stack for 32 bits architectures
         # and 8 bytes in stack for 64 bits architectures
         res: bytes = b""

@@ -2,6 +2,7 @@ import typing
 import struct
 from abc import ABCMeta
 
+from pytoolcore import style
 from pwncore import pwnutils
 
 
@@ -23,7 +24,7 @@ class ROPChainElement:
 
 class Gadget:
 
-    def __init__(self, gadgetname: str, gadgetaddr: int, base: int=0x0, nbparameters: int = 0,
+    def __init__(self, gadgetname: str, gadgetaddr: int, base: int = 0x0, nbparameters: int = 0,
                  architecture: pwnutils.Architecture = pwnutils.Architecture,
                  gadgetcomments: str = "") -> None:
         self.__gadgetname__: str = gadgetname
@@ -74,15 +75,15 @@ class ROP:
         self.__base__: int = base
 
     @property
-    def base(self)->int:
+    def base(self) -> int:
         return self.__base__
 
     @property
-    def chain(self)->typing.List[ROPChainElement]:
+    def chain(self) -> typing.List[ROPChainElement]:
         return self.__ropchain__
 
     @property
-    def raw(self)->bytes:
+    def raw(self) -> bytes:
         binary: bytes = b""
         for ropelement in self.__ropchain__:
             binary += ropelement.raw
@@ -108,13 +109,14 @@ class ROP:
     def pack(self, addr: int):
         self.__ropchain__.append(StackElement(addr, self.__architecture__))
 
-    def clear(self, base: int = 0)->None:
+    def clear(self, base: int = 0) -> None:
         self.__ropchain__ = []
         self.__base__ = base
 
     def dump(self, stackaddress: int = 0) -> str:
         rawaddress: int = stackaddress
-        stack: str = ""
+        headers: typing.List[str] = ["Offset", "Value"]
+        stack: typing.List[typing.List[str]] = []
         elements: typing.List[str] = []
         for ropelement in self.__ropchain__:
             elements += ropelement.elements
@@ -123,5 +125,5 @@ class ROP:
         for element in elements:
             addr: str = pwnutils.addressformat(struct.pack(self.__architecture__.bigendian, rawaddress).hex(), maxaddr)
             rawaddress += self.__architecture__.size
-            stack += addr + "\t\t" + element + "\n"
-        return stack
+            stack.append([addr, element])
+        return style.Style.tabulate(headers, stack)
